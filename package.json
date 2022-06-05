@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "typescript": "4.7.2",
+    "promises-aplus-tests": "^2.1.2"
+  },
+  "scripts": {
+    "test": "promises-aplus-tests MyPromise"
+  }
+}
