@@ -7,6 +7,6 @@ Implement an A+ Promise in es2022 and TypeScript
 ```bash
 # yarn
 yarn
-tsc MyPromise.ts
+tsc MyPromise.ts # need to install typescript globally first
 yarn test
 ```
