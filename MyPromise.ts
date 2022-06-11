@@ -126,47 +126,153 @@ class MyPromise<T> implements Promise<T> {
   ): Promise<T | TResult> => {
     return this.then(undefined, onrejected);
   };
-  all<T>(values: Iterable<T | PromiseLike<T>>): Promise<Awaited<T>[]>;
-  all<T extends readonly unknown[] | []>(
-    values: T
-  ): MyPromise<{ -readonly [P in keyof T]: Awaited<T[P]> }>;
-  all(
+  // all<T>(values: Iterable<T | PromiseLike<T>>): MyPromise<Awaited<T>[]>;
+  // all<T extends readonly unknown[] | []>(
+  //   values: T
+  // ): MyPromise<{ -readonly [P in keyof T]: Awaited<T[P]> }>;
+  all = (
     values: unknown
   ):
-    | Promise<Awaited<T>[]>
-    | Promise<{ -readonly [P in keyof T]: Awaited<T[P]> }> {
-    throw new Error('Method not implemented.');
-  }
-  race<T>(values: Iterable<T | PromiseLike<T>>): MyPromise<Awaited<T>>;
-  race<T extends readonly unknown[] | []>(
-    values: T
-  ): MyPromise<Awaited<T[number]>>;
-  race(values: unknown): MyPromise<Awaited<T>> | MyPromise<Awaited<T[]>> {
-    throw new Error('Method not implemented.');
-  }
-  allSettled<T extends readonly unknown[] | []>(
-    values: T
-  ): Promise<{ -readonly [P in keyof T]: PromiseSettledResult<Awaited<T[P]>> }>;
-  allSettled<T>(
-    values: Iterable<T | PromiseLike<T>>
-  ): Promise<PromiseSettledResult<Awaited<T>>[]>;
-  allSettled(
+    | MyPromise<Awaited<T>[]>
+    | MyPromise<{ -readonly [P in keyof T]: Awaited<T[P]> }> => {
+    return new MyPromise<Awaited<T>[]>((resolve, reject) => {
+      try {
+        const result: Awaited<T>[] = [];
+        let cnt = 0;
+        let iterator = (values as any)[Symbol.iterator]();
+        while (iterator.done === false) {
+          this.resolve(iterator.value).then(
+            (value) => {
+              result[cnt] = value as Awaited<T>;
+              cnt += 1;
+              if (iterator.next().done) {
+                resolve(result);
+              }
+            },
+            (reason) => {
+              reject(reason);
+            }
+          );
+          iterator = iterator.next();
+        }
+      } catch (error) {
+        reject(error as Awaited<T>[]);
+      }
+    });
+  };
+  // race<T>(values: Iterable<T | PromiseLike<T>>): MyPromise<Awaited<T>>;
+  // race<T extends readonly unknown[] | []>(
+  //   values: T
+  // ): MyPromise<Awaited<T[number]>>;
+  race = (values: unknown): MyPromise<Awaited<T>> | MyPromise<Awaited<T[]>> => {
+    return new MyPromise<Awaited<T>>((resolve, reject) => {
+      try {
+        let iterator = (values as any)[Symbol.iterator]();
+        while (iterator.done === false) {
+          this.resolve(iterator.value).then(
+            resolve as ((value: T) => void | PromiseLike<void>) &
+              ((value: void) => void | PromiseLike<void>),
+            reject
+          );
+          iterator = iterator.next();
+        }
+      } catch (error) {
+        reject(error as Awaited<T>);
+      }
+    });
+  };
+  // allSettled<T extends readonly unknown[] | []>(
+  //   values: T
+  // ): MyPromise<{
+  //   -readonly [P in keyof T]: PromiseSettledResult<Awaited<T[P]>>;
+  // }>;
+  // allSettled<T>(
+  //   values: Iterable<T | PromiseLike<T>>
+  // ): MyPromise<PromiseSettledResult<Awaited<T>>[]>;
+  allSettled = (
     values: unknown
   ):
     | Promise<{ -readonly [P in keyof T]: PromiseSettledResult<Awaited<T[P]>> }>
-    | Promise<PromiseSettledResult<Awaited<T>>[]> {
-    throw new Error('Method not implemented.');
-  }
-  any<T extends readonly unknown[] | []>(
-    values: T
-  ): Promise<Awaited<T[number]>>;
-  any<T>(values: Iterable<T | PromiseLike<T>>): Promise<Awaited<T>>;
-  any(values: unknown): Promise<Awaited<T[]>> | Promise<Awaited<T>> {
-    throw new Error('Method not implemented.');
-  }
-  finally(onfinally?: (() => void) | null | undefined): Promise<T> {
-    throw new Error('Method not implemented.');
-  }
+    | MyPromise<PromiseSettledResult<Awaited<T>>[]> => {
+    return new MyPromise<PromiseSettledResult<Awaited<T>>[]>(
+      (resolve, reject) => {
+        try {
+          const result: PromiseSettledResult<Awaited<T>>[] = [];
+          let cnt = 0;
+          let iterator = (values as any)[Symbol.iterator]();
+          while (iterator.done === false) {
+            this.resolve(iterator.value).then(
+              (value) => {
+                result[cnt] = {
+                  status: this.FULFILLED as 'fulfilled',
+                  value: value as Awaited<T>,
+                };
+                cnt += 1;
+                if (iterator.next().done) {
+                  resolve(result);
+                }
+              },
+              (reason) => {
+                result[cnt] = {
+                  status: this.REJECTED as 'rejected',
+                  reason: reason,
+                };
+                cnt += 1;
+                if (iterator.next().done) {
+                  resolve(result);
+                }
+              }
+            );
+            iterator = iterator.next();
+          }
+        } catch (error) {
+          reject(error as PromiseSettledResult<Awaited<T>>[]);
+        }
+      }
+    );
+  };
+  // any<T extends readonly unknown[] | []>(
+  //   values: T
+  // ): MyPromise<Awaited<T[number]>>;
+  // any<T>(values: Iterable<T | PromiseLike<T>>): MyPromise<Awaited<T>>;
+  any = (values: unknown): MyPromise<Awaited<T[]>> | MyPromise<Awaited<T>> => {
+    return new MyPromise<Awaited<T[]>>((resolve, reject) => {
+      try {
+        const result: Awaited<T>[] = [];
+        let cnt = 0;
+        let iterator = (values as any)[Symbol.iterator]();
+        while (iterator.done === false) {
+          this.resolve(iterator.value).then(
+            (value) => {
+              resolve(value as any);
+            },
+            (reason) => {
+              result[cnt] = {
+                status: this.REJECTED,
+                reason: reason,
+              } as unknown as Awaited<T>;
+              cnt += 1;
+              if (iterator.next().done) {
+                resolve(result);
+              }
+            }
+          );
+          iterator = iterator.next();
+        }
+      } catch (error) {
+        reject(error as Awaited<T>[]);
+      }
+    });
+  };
+  finally = (onfinally?: (() => void) | null | undefined): MyPromise<T> => {
+    return this.then(
+      (value) => this.resolve(onfinally).then(() => value),
+      (reason) =>
+        this.resolve(onfinally).then(() => {
+          throw reason;
+        })
+    );
+  };
   // prototype: Promise<any>;
   reject = <T = never>(reason?: any): MyPromise<T> => {
     return new MyPromise<T>(() => {
